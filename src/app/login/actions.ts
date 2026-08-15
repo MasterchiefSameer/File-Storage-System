@@ -79,3 +79,48 @@ export async function signOut() {
   await supabase.auth.signOut()
   redirect('/login')
 }
+
+export async function deleteAccount() {
+  const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    redirect('/login')
+  }
+
+  // 1. Fetch user's files to clean up storage objects
+  const { data: files } = await supabase
+    .from('files')
+    .select('storage_path')
+    .eq('user_id', user.id)
+
+  if (files && files.length > 0) {
+    const paths = files.map((f) => f.storage_path)
+    // Remove files from storage bucket
+    await supabase.storage.from('uploads').remove(paths)
+  }
+
+  // 2. Delete database records from public.files table
+  await supabase
+    .from('files')
+    .delete()
+    .eq('user_id', user.id)
+
+  // 3. Delete auth user record if service role key is present
+  if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    try {
+      const { createClient: createAdminClient } = await import('@supabase/supabase-js')
+      const adminSupabase = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY
+      )
+      await adminSupabase.auth.admin.deleteUser(user.id)
+    } catch (e) {
+      console.error('Error deleting user from auth:', e)
+    }
+  }
+
+  // 4. Sign out
+  await supabase.auth.signOut()
+  redirect('/login?message=' + encodeURIComponent('Your account and all associated files have been permanently deleted.'))
+}

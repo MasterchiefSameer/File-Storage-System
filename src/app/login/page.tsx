@@ -8,6 +8,7 @@ import { Eye, EyeOff, Pointer } from 'lucide-react'
 export default function LoginPage() {
   const searchParams = useSearchParams()
   const error = searchParams.get('error')
+  const message = searchParams.get('message')
   const [isLogin, setIsLogin] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
 
@@ -24,6 +25,12 @@ export default function LoginPage() {
         {error && (
           <div className="p-3 text-sm text-red-200 bg-red-900/30 border border-red-900/50 rounded-lg">
             {error}
+          </div>
+        )}
+
+        {message && (
+          <div className="p-3 text-sm text-emerald-200 bg-emerald-900/30 border border-emerald-900/50 rounded-lg">
+            {message}
           </div>
         )}
 

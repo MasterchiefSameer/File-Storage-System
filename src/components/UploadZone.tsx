@@ -8,10 +8,11 @@ import { createClient } from '@/utils/supabase/client'
 // When migrating to a paid tier or another storage provider, change MAX_FILE_SIZE to 100 * 1024 * 1024 (100MB).
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // Currently 50 MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf']
+const MAX_FILES = 5;
 
 export default function UploadZone() {
   const [isDragging, setIsDragging] = useState(false)
-  const [file, setFile] = useState<File | null>(null)
+  const [files, setFiles] = useState<File[]>([])
   const [progress, setProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
@@ -29,24 +30,42 @@ export default function UploadZone() {
     setIsDragging(false)
   }
 
-  const validateFile = (selectedFile: File) => {
+  const processFiles = (selectedFiles: FileList | File[]) => {
     setError(null)
     setSuccess(false)
     
-    if (!ALLOWED_TYPES.includes(selectedFile.type)) {
-      setError('Invalid file type. Only Images and PDFs are allowed.')
-      setFile(null)
-      return false
+    let validFiles: File[] = []
+    let hasError = false
+    
+    const fileArray = Array.from(selectedFiles)
+    
+    if (fileArray.length > MAX_FILES) {
+      setError(`You can only upload up to ${MAX_FILES} files at a time.`)
+      hasError = true
     }
 
-    if (selectedFile.size > MAX_FILE_SIZE) {
-      setError(`File is too large. Maximum size is ${MAX_FILE_SIZE / (1024 * 1024)}MB.`)
-      setFile(null)
-      return false
+    // only take up to MAX_FILES
+    const filesToProcess = fileArray.slice(0, MAX_FILES)
+
+    for (const file of filesToProcess) {
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        setError(`Invalid file type for ${file.name}. Only Images and PDFs are allowed.`)
+        hasError = true
+        break
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        setError(`File ${file.name} is too large. Maximum size is ${MAX_FILE_SIZE / (1024 * 1024)}MB.`)
+        hasError = true
+        break
+      }
+      validFiles.push(file)
     }
 
-    setFile(selectedFile)
-    return true
+    if (!hasError) {
+      setFiles(validFiles)
+    } else {
+      setFiles([])
+    }
   }
 
   const handleDrop = (e: React.DragEvent) => {
@@ -54,70 +73,72 @@ export default function UploadZone() {
     setIsDragging(false)
     
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      validateFile(e.dataTransfer.files[0])
+      processFiles(e.dataTransfer.files)
     }
   }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      validateFile(e.target.files[0])
+      processFiles(e.target.files)
     }
   }
 
+  const removeFile = (indexToRemove: number) => {
+    setFiles(files.filter((_, index) => index !== indexToRemove))
+  }
+
   const handleUpload = async () => {
-    if (!file) return
+    if (files.length === 0) return
 
     setIsUploading(true)
     setError(null)
-    setProgress(10) // Initial progress
+    setProgress(10)
 
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error("Not authenticated")
 
-      // 1. Upload to Supabase Storage
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
-      const filePath = `${user.id}/${fileName}`
+      let completed = 0;
+      const progressIncrement = 90 / files.length;
 
-      // Standard upload (Fine for files under 50MB)
-      const { error: uploadError } = await supabase.storage
-        .from('uploads')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false
-        })
+      for (const file of files) {
+        const fileExt = file.name.split('.').pop()
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
+        const filePath = `${user.id}/${fileName}`
 
-      if (uploadError) throw uploadError
-      
-      setProgress(75)
+        const { error: uploadError } = await supabase.storage
+          .from('uploads')
+          .upload(filePath, file, { cacheControl: '3600', upsert: false })
 
-      // 2. Save metadata to Postgres database
-      const { error: dbError } = await supabase
-        .from('files')
-        .insert({
-          user_id: user.id,
-          filename: fileName,
-          original_name: file.name,
-          size: file.size,
-          mime_type: file.type,
-          is_public: false,
-          storage_path: filePath
-        })
+        if (uploadError) throw uploadError
+        
+        const { error: dbError } = await supabase
+          .from('files')
+          .insert({
+            user_id: user.id,
+            filename: fileName,
+            original_name: file.name,
+            size: file.size,
+            mime_type: file.type,
+            is_public: false,
+            storage_path: filePath
+          })
 
-      if (dbError) throw dbError
+        if (dbError) throw dbError
+        
+        completed++
+        setProgress(10 + (completed * progressIncrement))
+      }
 
       setProgress(100)
       setSuccess(true)
       
-      // Reset after 2 seconds
       setTimeout(() => {
-        setFile(null)
+        setFiles([])
         setProgress(0)
         setSuccess(false)
         setIsUploading(false)
-        // In a real app, you would trigger a refresh of the file list here
-        window.location.reload(); // Simple refresh for now to update dashboard
+        window.location.reload();
       }, 2000)
 
     } catch (err: any) {
@@ -129,9 +150,9 @@ export default function UploadZone() {
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full h-full flex items-center justify-center">
       <div 
-        className={`w-full p-8 border-2 border-dashed rounded-xl flex flex-col items-center justify-center transition-all ${
+        className={`w-full max-w-lg p-8 border-2 border-dashed rounded-xl flex flex-col items-center justify-center transition-all ${
           isDragging 
             ? 'border-primary bg-primary/10' 
             : 'border-white/20 bg-black/20 hover:border-white/40'
@@ -146,57 +167,63 @@ export default function UploadZone() {
           className="hidden" 
           onChange={handleFileSelect}
           accept={ALLOWED_TYPES.join(',')}
+          multiple
         />
 
-        {!file && !isUploading && !success && (
+        {files.length === 0 && !isUploading && !success && (
           <>
             <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
               <UploadCloud className="w-8 h-8 text-primary" />
             </div>
-            <h3 className="text-lg font-semibold mb-1">Drag & Drop your file here</h3>
-            <p className="text-sm text-gray-400 mb-6">or click to browse from your device</p>
+            <h3 className="text-lg font-semibold mb-1">Drag & Drop files here</h3>
+            <p className="text-sm text-gray-400 mb-6 text-center">or click to browse from your device</p>
             <button 
               onClick={() => fileInputRef.current?.click()}
               className="px-6 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white font-medium transition-colors"
             >
-              Select File
+              Select Files
             </button>
-            <p className="text-xs text-gray-500 mt-4">
-              Max size: 50MB (Images & PDFs)
+            <p className="text-xs text-gray-500 mt-4 text-center">
+              Max {MAX_FILES} files at once. 50MB limit per file. <br/> (Images & PDFs)
             </p>
           </>
         )}
 
-        {file && !success && (
-          <div className="w-full max-w-sm flex flex-col items-center">
-            <div className="w-full flex items-center p-4 rounded-lg bg-white/5 border border-white/10 mb-4">
-              <File className="w-8 h-8 text-primary mr-4" />
-              <div className="flex-1 overflow-hidden text-left">
-                <p className="text-sm font-medium truncate" title={file.name}>{file.name}</p>
-                <p className="text-xs text-gray-400">{(file.size / (1024 * 1024)).toFixed(2)} MB</p>
-              </div>
-              {!isUploading && (
-                <button 
-                  onClick={() => setFile(null)} 
-                  className="p-1 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              )}
+        {files.length > 0 && !success && (
+          <div className="w-full flex flex-col gap-3">
+            <h3 className="font-semibold text-sm mb-2">{files.length} file(s) selected:</h3>
+            <div className="max-h-[200px] overflow-y-auto flex flex-col gap-2 pr-2 custom-scrollbar">
+              {files.map((file, idx) => (
+                <div key={idx} className="w-full flex items-center p-3 rounded-lg bg-white/5 border border-white/10 shrink-0">
+                  <File className="w-6 h-6 text-primary mr-3 shrink-0" />
+                  <div className="flex-1 overflow-hidden text-left">
+                    <p className="text-sm font-medium truncate" title={file.name}>{file.name}</p>
+                    <p className="text-xs text-gray-400">{(file.size / (1024 * 1024)).toFixed(2)} MB</p>
+                  </div>
+                  {!isUploading && (
+                    <button 
+                      onClick={() => removeFile(idx)} 
+                      className="p-1 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
             </div>
 
             {error && (
-              <div className="w-full flex items-center gap-2 p-3 text-sm text-red-200 bg-red-900/30 border border-red-900/50 rounded-lg mb-4">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <p>{error}</p>
+              <div className="w-full flex flex-col justify-center items-center gap-2 p-3 text-sm text-red-200 bg-red-900/30 border border-red-900/50 rounded-lg mt-2">
+                <div className="flex items-center gap-2"><AlertCircle className="w-4 h-4 shrink-0" /> Error</div>
+                <p className="text-center">{error}</p>
               </div>
             )}
 
             {isUploading ? (
-              <div className="w-full flex flex-col gap-2">
+              <div className="w-full flex flex-col gap-2 mt-4">
                 <div className="flex justify-between text-xs font-medium text-primary">
                   <span>Uploading...</span>
-                  <span>{progress}%</span>
+                  <span>{Math.round(progress)}%</span>
                 </div>
                 <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
                   <div 
@@ -206,18 +233,26 @@ export default function UploadZone() {
                 </div>
               </div>
             ) : (
-              <button 
-                onClick={handleUpload}
-                className="w-full py-2.5 rounded-lg bg-primary hover:bg-primary-hover text-white font-medium transition-colors shadow-[0_0_15px_rgba(59,130,246,0.5)]"
-              >
-                Upload File
-              </button>
+              <div className="flex gap-2 mt-4">
+                <button 
+                  onClick={() => setFiles([])}
+                  className="flex-1 py-2.5 rounded-lg border border-white/10 hover:bg-white/5 text-white font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleUpload}
+                  className="flex-1 py-2.5 rounded-lg bg-primary hover:bg-primary-hover text-white font-medium transition-colors shadow-[0_0_15px_rgba(59,130,246,0.5)]"
+                >
+                  Upload {files.length} {files.length > 1 ? 'Files' : 'File'}
+                </button>
+              </div>
             )}
           </div>
         )}
 
         {success && (
-          <div className="flex flex-col items-center text-green-400 animate-in zoom-in duration-300">
+          <div className="flex flex-col items-center text-green-400 animate-in zoom-in duration-300 py-8">
             <CheckCircle2 className="w-16 h-16 mb-4" />
             <h3 className="text-xl font-bold text-white">Upload Complete!</h3>
           </div>

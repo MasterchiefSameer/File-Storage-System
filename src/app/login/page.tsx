@@ -1,19 +1,24 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useState } from 'react'
 import { login, signup, signInWithGoogle } from './actions'
 import { useSearchParams } from 'next/navigation'
+import { Eye, EyeOff } from 'lucide-react'
 
 export default function LoginPage() {
   const searchParams = useSearchParams()
   const error = searchParams.get('error')
+  const [isLogin, setIsLogin] = useState(true)
+  const [showPassword, setShowPassword] = useState(false)
 
   return (
     <div className="flex w-full h-full flex-col items-center justify-center pt-12 animate-in fade-in zoom-in duration-500">
       <div className="glass-card w-full max-w-md p-8 flex flex-col gap-6">
         <div className="text-center">
-          <h2 className="text-2xl font-bold">Welcome back</h2>
-          <p className="text-gray-400 text-sm mt-1">Sign in to your account to continue</p>
+          <h2 className="text-2xl font-bold">{isLogin ? 'Welcome back' : 'Create an Account'}</h2>
+          <p className="text-gray-400 text-sm mt-1">
+            {isLogin ? 'Sign in to your account to continue' : 'Enter your details to get started'}
+          </p>
         </div>
 
         {error && (
@@ -23,6 +28,20 @@ export default function LoginPage() {
         )}
 
         <form className="flex flex-col gap-4">
+          {!isLogin && (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-gray-300" htmlFor="name">Full Name</label>
+              <input
+                id="name"
+                name="name"
+                type="text"
+                required={!isLogin}
+                className="bg-black/20 border border-white/10 rounded-lg px-4 py-2.5 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                placeholder="John Doe"
+              />
+            </div>
+          )}
+
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-gray-300" htmlFor="email">Email</label>
             <input
@@ -37,28 +56,39 @@ export default function LoginPage() {
 
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-gray-300" htmlFor="password">Password</label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              required
-              className="bg-black/20 border border-white/10 rounded-lg px-4 py-2.5 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-              placeholder="••••••••"
-            />
+            <div className="relative w-full">
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                required
+                className="bg-black/20 border border-white/10 rounded-lg px-4 py-2.5 w-full pr-12 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                placeholder="••••••••"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-white transition-colors"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
           </div>
 
           <div className="flex flex-col gap-3 mt-4">
             <button
-              formAction={login}
+              formAction={isLogin ? login : signup}
               className="w-full bg-primary hover:bg-primary-hover text-white font-medium py-2.5 rounded-lg transition-all shadow-lg"
             >
-              Sign In
+              {isLogin ? 'Sign In' : 'Sign Up'}
             </button>
             <button
-              formAction={signup}
-              className="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white font-medium py-2.5 rounded-lg transition-all"
+              type="button"
+              onClick={() => setIsLogin(!isLogin)}
+              className="text-sm text-gray-400 hover:text-white transition-colors mt-2"
             >
-              Create Account
+              {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
             </button>
           </div>
         </form>

@@ -65,7 +65,11 @@ export async function signInWithGoogle() {
     },
   })
 
-  if (data.url) {
+  if (error) {
+    redirect('/login?error=' + encodeURIComponent(error.message))
+  }
+
+  if (data?.url) {
     redirect(data.url) // use the redirect API for your server framework
   }
 }

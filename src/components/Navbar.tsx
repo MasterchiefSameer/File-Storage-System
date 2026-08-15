@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LogOut } from 'lucide-react'
+import { LogOut, Pointer } from 'lucide-react'
 
 export default function Navbar({ user, signOutAction }: { user: any, signOutAction: () => void }) {
   const pathname = usePathname()
@@ -22,15 +22,16 @@ export default function Navbar({ user, signOutAction }: { user: any, signOutActi
               Profile
             </Link>
             <form action={signOutAction}>
-              <button className="flex items-center gap-2 px-4 py-2 rounded-full glass text-sm hover:bg-white/10 transition-colors border border-white/10">
+              <button className="flex items-center gap-2 px-4 py-2 rounded-full glass text-sm hover:bg-white/10 transition-colors border border-white/10 cursor-pointer">
                 <LogOut className="w-4 h-4" /> Sign Out
               </button>
             </form>
           </>
         ) : (
           pathname !== '/login' && (
-            <Link href="/login" className="text-sm font-medium px-4 py-2 rounded-full bg-primary hover:bg-primary-hover text-white transition-all shadow-[0_0_15px_rgba(59,130,246,0.5)]">
-              Sign In
+            <Link href="/login" className="group text-sm font-medium px-4 py-2 rounded-full bg-primary hover:bg-primary-hover text-white transition-all shadow-[0_0_15px_rgba(59,130,246,0.5)] inline-flex items-center gap-1.5 cursor-pointer">
+              <span>Sign In</span>
+              <Pointer className="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 transform group-hover:-rotate-12 text-blue-200" />
             </Link>
           )
         )}

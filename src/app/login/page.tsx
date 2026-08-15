@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { login, signup, signInWithGoogle } from './actions'
 import { useSearchParams } from 'next/navigation'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, Pointer } from 'lucide-react'
 
 export default function LoginPage() {
   const searchParams = useSearchParams()
@@ -79,16 +79,18 @@ export default function LoginPage() {
           <div className="flex flex-col gap-3 mt-4">
             <button
               formAction={isLogin ? login : signup}
-              className="w-full bg-primary hover:bg-primary-hover text-white font-medium py-2.5 rounded-lg transition-all shadow-lg"
+              className="group w-full bg-primary hover:bg-primary-hover text-white font-medium py-2.5 rounded-lg transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
             >
-              {isLogin ? 'Sign In' : 'Sign Up'}
+              <span>{isLogin ? 'Sign In' : 'Sign Up'}</span>
+              <Pointer className="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 transform group-hover:-rotate-12 text-blue-200" />
             </button>
             <button
               type="button"
               onClick={() => setIsLogin(!isLogin)}
-              className="text-sm text-gray-400 hover:text-white transition-colors mt-2"
+              className="group text-sm text-gray-400 hover:text-white transition-colors mt-2 inline-flex items-center justify-center gap-1.5 cursor-pointer"
             >
-              {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
+              <span>{isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}</span>
+              <Pointer className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
             </button>
           </div>
         </form>

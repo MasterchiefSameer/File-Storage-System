@@ -21,7 +21,7 @@ export default async function DashboardPage() {
           <p className="text-gray-400 mt-1">Manage and upload your files</p>
         </div>
         <form action={signOut}>
-          <button className="flex items-center gap-2 px-4 py-2 rounded-lg glass text-sm hover:bg-white/10 transition-colors">
+          <button className="flex items-center gap-2 px-4 py-2 rounded-lg glass text-sm hover:bg-white/10 transition-colors cursor-pointer">
             <LogOut className="w-4 h-4" /> Sign Out
           </button>
         </form>

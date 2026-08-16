@@ -9,10 +9,19 @@ export async function updateSession(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-  // If Supabase environment variables are missing on Vercel, return response safely to prevent middleware crash
+  // If Supabase environment variables are missing, return response safely to prevent middleware crash
   if (!supabaseUrl || !supabaseAnonKey) {
     console.warn('Supabase environment variables (NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY) are missing in Middleware!')
     return supabaseResponse
+  }
+
+  // Fail-safe: If Supabase redirects code to Home / Root path (e.g., /?code=...) instead of /auth/callback,
+  // automatically forward the request to /auth/callback so code is exchanged for an active user session!
+  const code = request.nextUrl.searchParams.get('code')
+  if (code && !request.nextUrl.pathname.startsWith('/auth/callback')) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/auth/callback'
+    return NextResponse.redirect(url)
   }
 
   try {

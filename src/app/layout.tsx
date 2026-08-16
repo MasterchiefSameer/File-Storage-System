@@ -33,9 +33,9 @@ export default async function RootLayout({
             © {new Date().getFullYear()} SecureStorage. All rights reserved.
           </footer>
         </div>
-        <Toaster 
-          theme="dark" 
-          position="top-right" 
+        <Toaster
+          theme="dark"
+          position="bottom-right"
           toastOptions={{
             style: {
               background: 'rgba(18, 20, 26, 0.9)',

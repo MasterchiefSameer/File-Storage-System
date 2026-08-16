@@ -199,7 +199,7 @@ export default function ProfilePage() {
       <div className="mt-4">
         <h3 className="text-xl font-bold mb-4">Your Shared Files</h3>
         <div className="glass-card p-6 min-h-[300px] flex flex-col text-gray-100">
-          <FileList userId={user.id} readOnly={true} />
+          <FileList userId={user.id} readOnly={true} showStats={false} />
         </div>
       </div>
 

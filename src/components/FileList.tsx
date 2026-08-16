@@ -11,6 +11,7 @@ import {
   Link2
 } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
+import { getBaseUrl } from '@/utils/url'
 
 type FileRecord = {
   id: string
@@ -97,7 +98,7 @@ export default function FileList({ userId, readOnly = false }: { userId: string,
   }
 
   const copyLink = (fileId: string) => {
-    const url = `${window.location.origin}/share/${fileId}`
+    const url = `${getBaseUrl()}/share/${fileId}`
     navigator.clipboard.writeText(url)
     alert('Public link copied to clipboard!')
   }

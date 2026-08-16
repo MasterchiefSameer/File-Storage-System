@@ -4,6 +4,7 @@ import './globals.css'
 import { createClient } from '@/utils/supabase/server'
 import { signOut } from './login/actions'
 import Navbar from '@/components/Navbar'
+import { Toaster } from 'sonner'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 
@@ -32,6 +33,22 @@ export default async function RootLayout({
             © {new Date().getFullYear()} SecureStorage. All rights reserved.
           </footer>
         </div>
+        <Toaster 
+          theme="dark" 
+          position="top-right" 
+          toastOptions={{
+            style: {
+              background: 'rgba(18, 20, 26, 0.9)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              color: '#f8fafc',
+              borderRadius: '1rem',
+              boxShadow: '0 15px 35px -5px rgba(0, 0, 0, 0.6)',
+              padding: '14px 18px',
+            },
+          }}
+        />
       </body>
     </html>
   )

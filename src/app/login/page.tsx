@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { login, signup, signInWithGoogle } from './actions'
 import { useSearchParams } from 'next/navigation'
-import { Eye, EyeOff, Pointer } from 'lucide-react'
+import { Eye, EyeOff, Pointer, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 export default function LoginPage() {
   const searchParams = useSearchParams()
@@ -11,6 +12,23 @@ export default function LoginPage() {
   const message = searchParams.get('message')
   const [isLogin, setIsLogin] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
+
+  useEffect(() => {
+    if (error) {
+      toast.error('Authentication Error', {
+        description: error,
+        icon: <AlertCircle className="w-5 h-5 text-red-400" />,
+        duration: 5000,
+      })
+    }
+    if (message) {
+      toast.success('Notification', {
+        description: message,
+        icon: <CheckCircle2 className="w-5 h-5 text-emerald-400" />,
+        duration: 5000,
+      })
+    }
+  }, [error, message])
 
   return (
     <div className="flex w-full h-full flex-col items-center justify-center pt-12 animate-in fade-in zoom-in duration-500">
@@ -21,18 +39,6 @@ export default function LoginPage() {
             {isLogin ? 'Sign in to your account to continue' : 'Enter your details to get started'}
           </p>
         </div>
-
-        {error && (
-          <div className="p-3 text-sm text-red-200 bg-red-900/30 border border-red-900/50 rounded-lg">
-            {error}
-          </div>
-        )}
-
-        {message && (
-          <div className="p-3 text-sm text-emerald-200 bg-emerald-900/30 border border-emerald-900/50 rounded-lg">
-            {message}
-          </div>
-        )}
 
         <form className="flex flex-col gap-4">
           {!isLogin && (

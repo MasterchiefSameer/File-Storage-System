@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 import { getBaseUrl } from '@/utils/url'
+import { toast } from 'sonner'
 
 type FileRecord = {
   id: string
@@ -59,6 +60,9 @@ export default function FileList({ userId, readOnly = false }: { userId: string,
       // Delete from database
       await supabase.from('files').delete().eq('id', file.id)
       setFiles(files.filter(f => f.id !== file.id))
+      toast.success('File deleted successfully')
+    } else {
+      toast.error('Failed to delete file')
     }
   }
 
@@ -71,6 +75,11 @@ export default function FileList({ userId, readOnly = false }: { userId: string,
 
     if (!error) {
       setFiles(files.map(f => f.id === file.id ? { ...f, is_public: newStatus } : f))
+      toast.info(newStatus ? 'File is now Public' : 'File is now Private', {
+        description: newStatus ? 'Anyone with the shareable link can view this file.' : 'Only you can view this file.',
+      })
+    } else {
+      toast.error('Failed to update file visibility')
     }
   }
 
@@ -97,10 +106,14 @@ export default function FileList({ userId, readOnly = false }: { userId: string,
     }
   }
 
-  const copyLink = (fileId: string) => {
+  const copyLink = (fileId: string, fileName?: string) => {
     const url = `${getBaseUrl()}/share/${fileId}`
     navigator.clipboard.writeText(url)
-    alert('Public link copied to clipboard!')
+    toast.success('Public link copied to clipboard!', {
+      description: fileName || url,
+      icon: <Link2 className="w-5 h-5 text-blue-400" />,
+      duration: 3500,
+    })
   }
 
   if (loading) return <div className="animate-pulse flex flex-col gap-4">Loading files...</div>
@@ -142,7 +155,7 @@ export default function FileList({ userId, readOnly = false }: { userId: string,
                 <Download className="w-4 h-4" />
               </button>
               {file.is_public && (
-                <button onClick={() => copyLink(file.id)} className="p-1.5 bg-blue-500/20 hover:bg-blue-500/30 rounded-md text-blue-400 transition-colors flex-1 flex justify-center items-center" title="Copy Public Link">
+                <button onClick={() => copyLink(file.id, file.original_name)} className="p-1.5 bg-blue-500/20 hover:bg-blue-500/30 rounded-md text-blue-400 transition-colors flex-1 flex justify-center items-center" title="Copy Public Link">
                   <Link2 className="w-4 h-4" />
                 </button>
               )}

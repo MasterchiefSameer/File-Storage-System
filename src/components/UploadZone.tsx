@@ -3,10 +3,9 @@
 import { useState, useRef } from 'react'
 import { UploadCloud, File, X, CheckCircle2, AlertCircle } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
+import { toast } from 'sonner'
 
-// NOTE FOR FUTURE: Supabase free tier limits uploads to 50MB. 
-// When migrating to a paid tier or another storage provider, change MAX_FILE_SIZE to 100 * 1024 * 1024 (100MB).
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // Currently 50 MB
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf']
 const MAX_FILES = 5;
 
@@ -40,7 +39,12 @@ export default function UploadZone() {
     const fileArray = Array.from(selectedFiles)
 
     if (fileArray.length > MAX_FILES) {
-      setError(`You can only upload up to ${MAX_FILES} files at a time.`)
+      const errMsg = `You can only upload up to ${MAX_FILES} files at a time.`
+      setError(errMsg)
+      toast.error('Too Many Files', {
+        description: errMsg,
+        icon: <AlertCircle className="w-5 h-5 text-red-400" />,
+      })
       hasError = true
     }
 
@@ -49,12 +53,23 @@ export default function UploadZone() {
 
     for (const file of filesToProcess) {
       if (!ALLOWED_TYPES.includes(file.type)) {
-        setError(`Invalid file type for ${file.name}. Only Images and PDFs are allowed.`)
+        const errMsg = `Invalid file type for ${file.name}. Only Images and PDFs are allowed.`
+        setError(errMsg)
+        toast.error('Invalid File Type', {
+          description: errMsg,
+          icon: <AlertCircle className="w-5 h-5 text-red-400" />,
+        })
         hasError = true
         break
       }
       if (file.size > MAX_FILE_SIZE) {
-        setError(`File ${file.name} is too large. Maximum size is ${MAX_FILE_SIZE / (1024 * 1024)}MB.`)
+        const errMsg = "Files over 50 MB are temporarily restricted during our Beta release."
+        setError(errMsg)
+        toast.error('Upload Limit Reached', {
+          description: errMsg,
+          icon: <AlertCircle className="w-5 h-5 text-red-400" />,
+          duration: 5000,
+        })
         hasError = true
         break
       }

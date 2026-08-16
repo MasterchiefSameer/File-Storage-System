@@ -33,12 +33,12 @@ export default function UploadZone() {
   const processFiles = (selectedFiles: FileList | File[]) => {
     setError(null)
     setSuccess(false)
-    
+
     let validFiles: File[] = []
     let hasError = false
-    
+
     const fileArray = Array.from(selectedFiles)
-    
+
     if (fileArray.length > MAX_FILES) {
       setError(`You can only upload up to ${MAX_FILES} files at a time.`)
       hasError = true
@@ -71,7 +71,7 @@ export default function UploadZone() {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(false)
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       processFiles(e.dataTransfer.files)
     }
@@ -111,7 +111,7 @@ export default function UploadZone() {
           .upload(filePath, file, { cacheControl: '3600', upsert: false })
 
         if (uploadError) throw uploadError
-        
+
         const { error: dbError } = await supabase
           .from('files')
           .insert({
@@ -125,14 +125,14 @@ export default function UploadZone() {
           })
 
         if (dbError) throw dbError
-        
+
         completed++
         setProgress(10 + (completed * progressIncrement))
       }
 
       setProgress(100)
       setSuccess(true)
-      
+
       setTimeout(() => {
         setFiles([])
         setProgress(0)
@@ -151,20 +151,19 @@ export default function UploadZone() {
 
   return (
     <div className="w-full h-full flex items-center justify-center">
-      <div 
-        className={`w-full max-w-lg p-8 border-2 border-dashed rounded-xl flex flex-col items-center justify-center transition-all ${
-          isDragging 
-            ? 'border-primary bg-primary/10' 
+      <div
+        className={`w-full max-w-lg p-8 border-2 border-dashed rounded-xl flex flex-col items-center justify-center transition-all ${isDragging
+            ? 'border-primary bg-primary/10'
             : 'border-white/20 bg-black/20 hover:border-white/40'
-        }`}
+          }`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        <input 
-          type="file" 
-          ref={fileInputRef} 
-          className="hidden" 
+        <input
+          type="file"
+          ref={fileInputRef}
+          className="hidden"
           onChange={handleFileSelect}
           accept={ALLOWED_TYPES.join(',')}
           multiple
@@ -177,14 +176,14 @@ export default function UploadZone() {
             </div>
             <h3 className="text-lg font-semibold mb-1">Drag & Drop files here</h3>
             <p className="text-sm text-gray-400 mb-6 text-center">or click to browse from your device</p>
-            <button 
+            <button
               onClick={() => fileInputRef.current?.click()}
               className="px-6 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white font-medium transition-colors"
             >
               Select Files
             </button>
             <p className="text-xs text-gray-500 mt-4 text-center">
-              Max {MAX_FILES} files at once. 50MB limit per file. <br/> (Images & PDFs)
+              Max {MAX_FILES} files at once. 50MB limit per file. <br /> (Images & PDFs)
             </p>
           </>
         )}
@@ -201,8 +200,8 @@ export default function UploadZone() {
                     <p className="text-xs text-gray-400">{(file.size / (1024 * 1024)).toFixed(2)} MB</p>
                   </div>
                   {!isUploading && (
-                    <button 
-                      onClick={() => removeFile(idx)} 
+                    <button
+                      onClick={() => removeFile(idx)}
                       className="p-1 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-colors"
                     >
                       <X className="w-4 h-4" />
@@ -226,21 +225,21 @@ export default function UploadZone() {
                   <span>{Math.round(progress)}%</span>
                 </div>
                 <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
-                  <div 
-                    className="h-full bg-primary rounded-full transition-all duration-300" 
+                  <div
+                    className="h-full bg-primary rounded-full transition-all duration-300"
                     style={{ width: `${progress}%` }}
                   />
                 </div>
               </div>
             ) : (
               <div className="flex gap-2 mt-4">
-                <button 
+                <button
                   onClick={() => setFiles([])}
                   className="flex-1 py-2.5 rounded-lg border border-white/10 hover:bg-white/5 text-white font-medium transition-colors"
                 >
                   Cancel
                 </button>
-                <button 
+                <button
                   onClick={handleUpload}
                   className="flex-1 py-2.5 rounded-lg bg-primary hover:bg-primary-hover text-white font-medium transition-colors shadow-[0_0_15px_rgba(59,130,246,0.5)]"
                 >
